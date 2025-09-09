@@ -23,5 +23,5 @@ let oneMinuteBefore = currentTime.subtract(numberOfhours, "hours").subtract(numb
 // Format the resulting moment object to ISO 8601 with the local (PDT) offset
 let isoStringOneMinuteBefore = oneMinuteBefore.format();
 
-//Pass time to batch
+//Pass time to batch file
 console.log(`${isoStringOneMinuteBefore}`);

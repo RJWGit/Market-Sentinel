@@ -1,4 +1,3 @@
-import { error } from "console";
 import * as fs from "fs";
 import * as fsp from "fs/promises"; // For promise-based file system operations
 import * as path from "path"; // Needed for path.join
@@ -16,18 +15,6 @@ export const getCurrentWorkingDirectory = (): string => {
   return __dirname;
 };
 
-export const __dirname = getCurrentWorkingDirectory();
-
-export const RAW_TRUTH_OUTPUT_DIRECTORY = path.join(__dirname, "../src/truth_output/raw_truth_output");
-export const FILTERED_TRUTH_OUTPUT_DIRECTORY = path.join(__dirname, "../src/truth_output/filtered_truth_output");
-export const RAW_TRUTH_OUTPUT_FILE_PATH = path.join(__dirname, "../src/truth_output/raw_truth_output/output.txt");
-export const FILTERED_TRUTH_OUTPUT_FILE_PATH = path.join(
-  __dirname,
-  "../src/truth_output/filtered_truth_output/output.json"
-);
-export const TRUMP_PICS_PATH = path.join(__dirname, "../trumppics");
-export const DJT_TRUTH_BATCH_UPDATE_PATH = path.join(__dirname, "../../fetch.bat");
-
 export const writeFile = (content: string, path: string): number | void => {
   try {
     fs.writeFileSync(path, content);
@@ -36,6 +23,10 @@ export const writeFile = (content: string, path: string): number | void => {
     console.error("Error writing to file:", error);
     throw error;
   }
+};
+
+export const doesFileExist = (path: string) => {
+  return fs.existsSync(path);
 };
 
 export const readFile = (path: string): string => {
@@ -63,8 +54,7 @@ export const runBatch = (path: string) => {
     const output = execSync(path).toString();
     console.log("Batch runned succesfully: ", path, output);
   } catch (error) {
-    console.error("ERROR: Script failed to execute.");
-    console.error(error);
+    throw error;
   }
 };
 
@@ -124,7 +114,7 @@ export const isFileEmpty = (path: string) => {
     }
   } catch (error) {
     console.log(error);
-    return true; //Do nothing
+    return true;
   }
 };
 
@@ -135,4 +125,8 @@ export const isValidJSON = (str: string) => {
     return false;
   }
   return true;
+};
+
+export const truncateString = (str: string, limit: number): string => {
+  return str.length > limit ? str.slice(0, limit - 3) + "..." : str;
 };

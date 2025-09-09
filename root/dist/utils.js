@@ -38,6 +38,9 @@ export const writeFile = (content, path) => {
         throw error;
     }
 };
+export const doesFileExist = (path) => {
+    return fs.existsSync(path);
+};
 export const readFile = (path) => {
     try {
         const content = fs.readFileSync(path, "utf8");
@@ -64,8 +67,7 @@ export const runBatch = (path) => {
         console.log("Batch runned succesfully: ", path, output);
     }
     catch (error) {
-        console.error("ERROR: Script failed to execute.");
-        console.error(error);
+        throw error;
     }
 };
 /**
@@ -123,7 +125,7 @@ export const isFileEmpty = (path) => {
     }
     catch (error) {
         console.log(error);
-        return true; //Do nothing
+        return true;
     }
 };
 export const isValidJSON = (str) => {
@@ -134,5 +136,8 @@ export const isValidJSON = (str) => {
         return false;
     }
     return true;
+};
+export const truncateString = (str, limit) => {
+    return str.length > limit ? str.slice(0, limit - 3) + "..." : str;
 };
 //# sourceMappingURL=utils.js.map

@@ -2,51 +2,38 @@ import { geminiRequest } from "./gemini_API.js";
 import "dotenv/config";
 import {
   readFile,
-  FILTERED_TRUTH_OUTPUT_FILE_PATH,
   deleteContentsOfDirectory,
   isValidJSON,
-  RAW_TRUTH_OUTPUT_FILE_PATH,
-  __dirname,
   getDirectoryContents,
-  TRUMP_PICS_PATH,
   isFileEmpty,
   runBatch,
-  DJT_TRUTH_BATCH_UPDATE_PATH,
-  RAW_TRUTH_OUTPUT_DIRECTORY,
-  FILTERED_TRUTH_OUTPUT_DIRECTORY,
+  doesFileExist,
+  writeFile,
 } from "./utils.js";
 import { parseOutput } from "./parseDJTOutput.js";
-// Require the necessary discord.js classes
 import { Client, Events, GatewayIntentBits, TextChannel, EmbedBuilder, AttachmentBuilder, Embed } from "discord.js";
 import { DJTAllResponses, DJTResponse, GeminiResponseDJT } from "./types.js";
+import { console } from "inspector";
+import {
+  TimeUnit,
+  DiscordChannelIds,
+  EmbedFieldNames,
+  FILTERED_TRUTH_OUTPUT_FILE_PATH,
+  RAW_TRUTH_OUTPUT_FILE_PATH,
+  __dirname,
+  DJT_TRUTH_BATCH_UPDATE_PATH,
+  TRUMP_PICS_PATH,
+} from "./constants.js";
 
-const enum TimeUnit {
-  SECOND = 1000,
-  MINUTE = 60000,
-}
-
-const enum DiscordChannelIds {
-  MARKET = "1371300443715801209",
-  TRUMP_MEMES = "1399172278012481718",
-}
-
-const enum EmbedFieldNames {
-  MARKET_IMPACT = "Market Impact",
-  REGARDED_LEVEL = "Regardation Level",
-  WRITING_LEVEL = "Writing Grade Level",
-  HIGHLIGHT = "Highlight",
-}
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 // When the client is ready, run this code (only once).
-// The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
-// It makes some properties non-nullable.
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
-// Log in to Discord with your client's token
+// Bot login for discord
 client.login(process.env.BOT_TOKEN);
 
 let sendEmbed = (discordEmbed: EmbedBuilder, imageName: string) => {
@@ -67,49 +54,49 @@ const significantMarketImpact = (embed: EmbedBuilder) => {
     if (embed?.data?.fields) {
       for (const field of embed.data.fields) {
         if (field.name === EmbedFieldNames.MARKET_IMPACT) {
-          if (parseInt(field.value) > 5) {
-            return true;
-          } else {
-            return false;
-          }
+          return parseInt(field.value, 10) >= 7;
         }
       }
     } else {
-      console.log("Embed not defined");
+      console.error("Embed not defined");
       return false;
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return false;
   }
 };
 
 const generateDiscordEmbed = (geminiContent: GeminiResponseDJT, rawContent: DJTResponse, imageName: string) => {
-  let embed = new EmbedBuilder()
-    .setColor(0xff00ff)
-    .setTitle(geminiContent.title)
-    .setURL(rawContent.url)
-    .setDescription(geminiContent.summary)
-    .setImage(`attachment://${imageName}`)
-    .addFields(
-      { name: EmbedFieldNames.MARKET_IMPACT, value: `${geminiContent.marketImpact}`, inline: true },
-      { name: EmbedFieldNames.WRITING_LEVEL, value: `${geminiContent.writingLevel}`, inline: true },
-      { name: EmbedFieldNames.REGARDED_LEVEL, value: `${geminiContent.stupidityLevel}`, inline: true },
-      { name: EmbedFieldNames.HIGHLIGHT, value: `${geminiContent.highlights}`, inline: true }
-    )
-    .setTimestamp();
+  try {
+    let embed = new EmbedBuilder()
+      .setColor(0xff00ff)
+      .setTitle(String(geminiContent?.title ?? "\u200b"))
+      .setURL(String(rawContent?.url ?? "\u200b"))
+      .setDescription(String(geminiContent?.summary ?? "\u200b"))
+      .setImage(`attachment://${imageName}`)
+      .addFields(
+        { name: EmbedFieldNames.MARKET_IMPACT, value: String(geminiContent?.marketImpact ?? "\u200b"), inline: true },
+        { name: EmbedFieldNames.WRITING_LEVEL, value: String(geminiContent?.writingLevel ?? "\u200b"), inline: true },
+        {
+          name: EmbedFieldNames.REGARDED_LEVEL,
+          value: String(geminiContent?.stupidityLevel ?? "\u200b"),
+          inline: true,
+        },
+        { name: EmbedFieldNames.HIGHLIGHT, value: String(geminiContent?.highlights ?? "\u200b"), inline: true }
+      )
+      .setTimestamp();
 
-  return embed;
+    return embed;
+  } catch (error) {
+    console.error("Gemini Contents: ", JSON.stringify(geminiContent), "rawContent.URL: ", rawContent.url);
+    throw error;
+  }
 };
 
 //Add content check to filter out empty content only containing HTML tags
 const analyzeTruth = async (content: DJTResponse) => {
-  if (
-    content?.content !== undefined &&
-    content.content !== "" &&
-    content.content !== " " &&
-    content.content.length > 10
-  ) {
+  if (content?.content && content.content !== "" && content.content !== " " && content.content.length > 10) {
     try {
       let response = await geminiRequest(content.content);
       return response;
@@ -132,7 +119,7 @@ const getRandomFolderImageName = (path: string) => {
   }
 };
 
-const loop = async () => {
+const processTruth = async () => {
   //No updates from Truth Social (DJT)
   if (isFileEmpty(RAW_TRUTH_OUTPUT_FILE_PATH)) {
     console.log("No updates");
@@ -146,9 +133,11 @@ const loop = async () => {
 
       for (let response of filteredResponses) {
         let analyzedTruthMessage = await analyzeTruth(response);
-        if (analyzedTruthMessage?.text) {
-          // console.log(analyzedTruthMessage.text);
-          sendEmbed(generateDiscordEmbed(JSON.parse(analyzedTruthMessage.text), response, imageName), imageName);
+        if (analyzedTruthMessage) {
+          console.log("analyzedTruthMessage: ", JSON.stringify(analyzedTruthMessage));
+          sendEmbed(generateDiscordEmbed(analyzedTruthMessage, response, imageName), imageName);
+        } else {
+          console.error("No valid JSON content from Gemini response");
         }
       }
     } else {
@@ -157,22 +146,40 @@ const loop = async () => {
   } else {
     console.log("Unable to parse output");
   }
+};
 
-  deleteContentsOfDirectory(RAW_TRUTH_OUTPUT_DIRECTORY);
-  deleteContentsOfDirectory(FILTERED_TRUTH_OUTPUT_DIRECTORY);
+/**
+ * Creates 'Truth' output files if don't exist for both raw (string) and filtered (JSON)
+ */
+const initOutputFiles = (): void => {
+  //Create or refresh files
+  writeFile("", RAW_TRUTH_OUTPUT_FILE_PATH);
+  writeFile("", FILTERED_TRUTH_OUTPUT_FILE_PATH);
 };
 
 const main = async () => {
-  setInterval(() => {
-    runBatch(DJT_TRUTH_BATCH_UPDATE_PATH);
-    loop();
-  }, TimeUnit.MINUTE);
-};
-main();
+  initOutputFiles();
+  let numberOfMinutes = 5; // Should be same as batch time
 
-//TODO
-//
-//2. Set up auto timer to rerun every 20 seconds
-//4. clean up code
-//5. Check for overlap (previous pulled post) to avoid reposting same post
-//6. Make batch script and code take same input time
+  //How often to check for updates
+  let pollingInterval = TimeUnit.MINUTE * numberOfMinutes;
+
+  const loop = async () => {
+    try {
+      console.log("Batch fire");
+      runBatch(DJT_TRUTH_BATCH_UPDATE_PATH);
+    } catch (error) {
+      //Likely 429 error
+      pollingInterval += TimeUnit.MINUTE;
+      console.error(error, " Increase interval to: ", pollingInterval);
+    } finally {
+      console.log("Polling interval time:", pollingInterval);
+      processTruth();
+      setTimeout(loop, pollingInterval);
+    }
+  };
+
+  loop();
+};
+
+main();
