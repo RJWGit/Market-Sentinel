@@ -3,8 +3,6 @@ import { DJTAllResponses } from "./types.js";
 import { readFile, writeFile, isFileEmpty } from "./utils.js";
 import { RAW_TRUTH_OUTPUT_FILE_PATH, FILTERED_TRUTH_OUTPUT_FILE_PATH } from "./constants.js";
 
-//Go up 1 directory '..' since 'import.meta.url' gets path of JS file (../dist) and not TS file (../src)
-
 /**
  * Processes and transforms data from DJT API and returns JSON
  *
