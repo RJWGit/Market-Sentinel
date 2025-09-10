@@ -50,7 +50,7 @@ const significantMarketImpact = (embed: EmbedBuilder) => {
     if (embed?.data?.fields) {
       for (const field of embed.data.fields) {
         if (field.name === EmbedFieldNames.MARKET_IMPACT) {
-          return parseInt(field.value, 10) >= 1;
+          return parseInt(field.value, 10) >= 7;
         }
       }
     } else {

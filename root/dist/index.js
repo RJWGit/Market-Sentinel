@@ -37,7 +37,7 @@ const significantMarketImpact = (embed) => {
         if ((_a = embed === null || embed === void 0 ? void 0 : embed.data) === null || _a === void 0 ? void 0 : _a.fields) {
             for (const field of embed.data.fields) {
                 if (field.name === "Market Impact" /* EmbedFieldNames.MARKET_IMPACT */) {
-                    return parseInt(field.value, 10) >= 1;
+                    return parseInt(field.value, 10) >= 7;
                 }
             }
         }
