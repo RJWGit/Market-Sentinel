@@ -1,4 +1,4 @@
-import { geminiRequest } from "./gemini_API.js";
+import { geminiRequest } from "./gemini-API.js";
 import "dotenv/config";
 import {
   readFile,
@@ -10,8 +10,8 @@ import {
   doesFileExist,
   writeFile,
 } from "./utils.js";
-import { parseOutput } from "./parseDJTOutput.js";
-import { Client, Events, GatewayIntentBits, TextChannel, EmbedBuilder, AttachmentBuilder, Embed } from "discord.js";
+import { parseOutput } from "./parse-DJT-Output.js";
+import { Client, Events, GatewayIntentBits, TextChannel, EmbedBuilder, AttachmentBuilder } from "discord.js";
 import { DJTAllResponses, DJTResponse, GeminiResponseDJT } from "./types.js";
 import { console } from "inspector";
 import {
@@ -20,9 +20,8 @@ import {
   EmbedFieldNames,
   FILTERED_TRUTH_OUTPUT_FILE_PATH,
   RAW_TRUTH_OUTPUT_FILE_PATH,
-  __dirname,
   DJT_TRUTH_BATCH_UPDATE_PATH,
-  TRUMP_PICS_PATH,
+  EMBEDDED_IMAGES_PATH,
 } from "./constants.js";
 
 // Create a new client instance
@@ -38,15 +37,12 @@ client.login(process.env.BOT_TOKEN);
 
 let sendEmbed = (discordEmbed: EmbedBuilder, imageName: string) => {
   // console.log(client.channels.cache);
-  const image = new AttachmentBuilder(`${__dirname}/../trumppics/${imageName}`);
+  const image = new AttachmentBuilder(`${EMBEDDED_IMAGES_PATH}/${imageName}`);
   let channel: TextChannel;
   if (significantMarketImpact(discordEmbed)) {
     channel = client.channels.cache.get(DiscordChannelIds.MARKET) as TextChannel;
-  } else {
-    channel = client.channels.cache.get(DiscordChannelIds.TRUMP_MEMES) as TextChannel;
+    channel.send({ embeds: [discordEmbed], files: [image] });
   }
-
-  channel.send({ embeds: [discordEmbed], files: [image] });
 };
 
 const significantMarketImpact = (embed: EmbedBuilder) => {
@@ -54,7 +50,7 @@ const significantMarketImpact = (embed: EmbedBuilder) => {
     if (embed?.data?.fields) {
       for (const field of embed.data.fields) {
         if (field.name === EmbedFieldNames.MARKET_IMPACT) {
-          return parseInt(field.value, 10) >= 7;
+          return parseInt(field.value, 10) >= 1;
         }
       }
     } else {
@@ -75,16 +71,11 @@ const generateDiscordEmbed = (geminiContent: GeminiResponseDJT, rawContent: DJTR
       .setURL(String(rawContent?.url ?? "\u200b"))
       .setDescription(String(geminiContent?.summary ?? "\u200b"))
       .setImage(`attachment://${imageName}`)
-      .addFields(
-        { name: EmbedFieldNames.MARKET_IMPACT, value: String(geminiContent?.marketImpact ?? "\u200b"), inline: true },
-        { name: EmbedFieldNames.WRITING_LEVEL, value: String(geminiContent?.writingLevel ?? "\u200b"), inline: true },
-        {
-          name: EmbedFieldNames.REGARDED_LEVEL,
-          value: String(geminiContent?.stupidityLevel ?? "\u200b"),
-          inline: true,
-        },
-        { name: EmbedFieldNames.HIGHLIGHT, value: String(geminiContent?.highlights ?? "\u200b"), inline: true }
-      )
+      .addFields({
+        name: EmbedFieldNames.MARKET_IMPACT,
+        value: String(geminiContent?.marketImpact ?? "\u200b"),
+        inline: true,
+      })
       .setTimestamp();
 
     return embed;
@@ -129,7 +120,7 @@ const processTruth = async () => {
   if (parseOutput() === 0) {
     if (isValidJSON(readFile(FILTERED_TRUTH_OUTPUT_FILE_PATH))) {
       const filteredResponses = JSON.parse(readFile(FILTERED_TRUTH_OUTPUT_FILE_PATH)) as DJTAllResponses;
-      const imageName = getRandomFolderImageName(TRUMP_PICS_PATH);
+      const imageName = getRandomFolderImageName(EMBEDDED_IMAGES_PATH);
 
       for (let response of filteredResponses) {
         let analyzedTruthMessage = await analyzeTruth(response);

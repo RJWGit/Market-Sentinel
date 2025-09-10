@@ -11,10 +11,7 @@ export interface DJTResponse {
 export type DJTAllResponses = DJTResponse[];
 
 export interface GeminiResponseDJT {
-  stupidityLevel: number;
-  highlights: string;
   marketImpact: number;
-  writingLevel: number;
   title: string;
   summary: string;
 }

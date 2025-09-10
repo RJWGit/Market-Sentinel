@@ -21,13 +21,6 @@ export const getCurrentWorkingDirectory = () => {
     const __dirname = path.dirname(__filename);
     return __dirname;
 };
-export const __dirname = getCurrentWorkingDirectory();
-export const RAW_TRUTH_OUTPUT_DIRECTORY = path.join(__dirname, "../src/truth_output/raw_truth_output");
-export const FILTERED_TRUTH_OUTPUT_DIRECTORY = path.join(__dirname, "../src/truth_output/filtered_truth_output");
-export const RAW_TRUTH_OUTPUT_FILE_PATH = path.join(__dirname, "../src/truth_output/raw_truth_output/output.txt");
-export const FILTERED_TRUTH_OUTPUT_FILE_PATH = path.join(__dirname, "../src/truth_output/filtered_truth_output/output.json");
-export const TRUMP_PICS_PATH = path.join(__dirname, "../trumppics");
-export const DJT_TRUTH_BATCH_UPDATE_PATH = path.join(__dirname, "../../fetch.bat");
 export const writeFile = (content, path) => {
     try {
         fs.writeFileSync(path, content);

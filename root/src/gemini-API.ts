@@ -17,24 +17,10 @@ export const geminiRequest = async (content: string): Promise<GeminiResponseDJT>
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          writingLevel: {
-            type: Type.INTEGER,
-            minimum: 1,
-            maximum: 20,
-          },
           marketImpact: {
             type: Type.INTEGER,
             minimum: 1,
             maximum: 10,
-          },
-          stupidityLevel: {
-            type: Type.INTEGER,
-            minimum: 1,
-            maximum: 10,
-          },
-          highlights: {
-            type: Type.STRING,
-            maximum: EMBED_MAX_CHARACTER_VALUE_FIELD,
           },
           title: {
             type: Type.STRING,
@@ -61,11 +47,6 @@ const validateGeminiResponse = (rawResponse: GenerateContentResponse): GeminiRes
     if (parsedResponse?.summary.length > EMBED_MAX_CHARACTER_VALUE_FIELD) {
       parsedResponse.summary = truncateString(parsedResponse.summary, EMBED_MAX_CHARACTER_VALUE_FIELD);
     }
-
-    if (parsedResponse?.highlights.length > EMBED_MAX_CHARACTER_VALUE_FIELD) {
-      parsedResponse.highlights = truncateString(parsedResponse.highlights, EMBED_MAX_CHARACTER_VALUE_FIELD);
-    }
-
     if (parsedResponse?.title.length > EMBED_MAX_CHARACTER_TITLE_FIELD) {
       parsedResponse.title = truncateString(parsedResponse.title, EMBED_MAX_CHARACTER_TITLE_FIELD);
     }
